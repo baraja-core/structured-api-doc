@@ -1,0 +1,5 @@
+extensions:
+	doc: Baraja\StructuredApi\Doc\DocExtension
+
+services:
+	- Baraja\StructuredApi\Doc\Documentation
