@@ -126,4 +126,16 @@ final class Helpers
 
 		return $return;
 	}
+
+
+	/**
+	 * @param string $name
+	 * @return string
+	 */
+	public static function formatPresenterNameToUri(string $name): string
+	{
+		return trim((string) preg_replace_callback('/([A-Z])/', static function (array $match): string {
+			return '-' . mb_strtolower($match[1], 'UTF-8');
+		}, $name), '-');
+	}
 }

@@ -6,7 +6,6 @@ namespace Baraja\StructuredApi\Doc\Descriptor;
 
 
 use Baraja\StructuredApi\Doc\Helpers;
-use ShopUp\Router\Helper;
 
 final class ApiAction
 {
@@ -88,7 +87,7 @@ final class ApiAction
 	 */
 	public function getRoute(): string
 	{
-		return Helper::formatPresenterNameToUri($this->getName());
+		return Helpers::formatPresenterNameToUri($this->getName());
 	}
 
 
