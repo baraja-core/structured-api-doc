@@ -11,6 +11,8 @@ use Nette\Utils\Strings;
 
 final class Renderer
 {
+	private const SCALAR_TYPES = ['string' => 1, 'bool' => 1, 'int' => 1, 'float' => 1, 'array' => 1, 'null' => 1];
+
 
 	/**
 	 * @param DocumentationInfo $documentation
@@ -77,6 +79,10 @@ final class Renderer
 
 		foreach ($parameters as $parameter) {
 			$type = $parameter->getType();
+			$typeName = $type === null ? null : $type->getName();
+			if ($typeName !== null && $typeName !== 'string' && $typeName !== 'int' && \class_exists($typeName) === true) {
+				return $this->processEntityProperties($typeName);
+			}
 
 			try {
 				$default = $parameter->getDefaultValue();
@@ -103,5 +109,80 @@ final class Renderer
 		}
 
 		return $return;
+	}
+
+
+	/**
+	 * @param string $entity
+	 * @return mixed[]
+	 */
+	private function processEntityProperties(string $entity): array
+	{
+		$return = [];
+
+		try {
+			$ref = new \ReflectionClass($entity);
+		} catch (\ReflectionException $e) {
+			return [];
+		}
+
+		$entityInstance = $ref->newInstanceWithoutConstructor();
+		$position = 0;
+		foreach ($ref->getProperties() as $property) {
+			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyComment($property->getDocComment() ?? '');
+
+			$children = null;
+			if ($entityClass !== null) {
+				$children = $this->processEntityProperties((string) $entityClass);
+			}
+
+			$return[] = [
+				'position' => $position++,
+				'name' => $property->getName(),
+				'type' => $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
+				'default' => $defaultValue = $property->getValue($entityInstance),
+				'required' => $entityClass === null && $allowsNull === false && $defaultValue === null,
+				'description' => $description,
+				'children' => $children,
+			];
+		}
+
+		return $return;
+	}
+
+
+	/**
+	 * @param string $comment
+	 * @return mixed[]
+	 */
+	private function inspectPropertyComment(string $comment): array
+	{
+		if (preg_match('/\@var\s+(\S+)/', $comment, $parser)) {
+			$requiredType = $parser[1] ?: 'null';
+		} else {
+			$requiredType = 'null';
+		}
+
+		$allowsNull = false;
+		$scalarTypes = [];
+		$entityClass = null;
+
+		foreach (explode('|', $requiredType) as $type) {
+			if ($type === 'null') {
+				$allowsNull = true;
+			} elseif (isset(self::SCALAR_TYPES[$type]) === true) {
+				$scalarTypes[] = $type;
+			} elseif (\class_exists($type) === true) {
+				$entityClass = $type;
+			}
+		}
+
+		if ($comment !== '') {
+			$description = Helpers::findCommentDescription(Helpers::normalizeComment($comment)) ?: null;
+		} else {
+			$description = null;
+		}
+
+		return [$description, $allowsNull, $scalarTypes, $entityClass];
 	}
 }
