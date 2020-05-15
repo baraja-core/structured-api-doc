@@ -56,7 +56,8 @@
 					<div v-for="action in endpoint.actions" class="mb-5">
 						<b-card>
 							<template v-slot:header>
-								<b-badge pill :variant="variantByAction[action.httpMethod]">{{ action.httpMethod }}
+								<b-badge pill :variant="variantByAction[action.httpMethod]">
+									{{ action.httpMethod }}
 								</b-badge>
 								<code class="ml-3">
 									api/v1/{{ endpoint.route + (action.route !== 'default' ? '/' + action.route : '') }}
@@ -71,37 +72,9 @@
 								<template v-if="action.parameters.length === 0">
 									<p><i>No parameters.</i></p>
 								</template>
-								<table v-else class="table table-sm">
-									<tr>
-										<th class="text-center" style="width:2em">#</th>
-										<th>Name</th>
-										<th>Type</th>
-										<th>Default</th>
-										<th>Description</th>
-										<th></th>
-									</tr>
-									<tr v-for="parameter in action.parameters">
-										<td class="text-center text-secondary text-small">{{ parameter.position }}</td>
-										<td>{{ parameter.name }}</td>
-										<td>{{ parameter.type }}</td>
-										<td>
-											<code v-if="parameter.default">{{ parameter.default }}</code>
-											<code v-if="!parameter.default && !parameter.required">null</code>
-										</td>
-										<td>
-											{{ parameter.description }}
-										</td>
-										<td class="text-right">
-											<template v-if="parameter.required">
-												<b-icon icon="exclamation-circle-fill" variant="danger"></b-icon>
-												<b class="text-danger">required</b>
-											</template>
-											<template v-else>
-												<i class="text-secondary text-small">optional</i>
-											</template>
-										</td>
-									</tr>
-								</table>
+								<template v-else>
+									<parameters :parameters="action.parameters"></parameters>
+								</template>
 								<template v-if="action.throws.length > 0">
 									<p><b>Throws:</b></p>
 									<ul>
@@ -149,6 +122,49 @@
 				return this.activeEndpoint === null ? null : this.structure[this.activeEndpoint];
 			}
 		}
+	});
+
+	Vue.component('parameters', {
+		props: ['parameters'],
+		template: `<table class="table table-sm">
+			<tr>
+				<th class="text-center" style="width:2em">#</th>
+				<th>Name</th>
+				<th>Type</th>
+				<th>Default</th>
+				<th>Description</th>
+				<th></th>
+			</tr>
+			<template v-for="parameter in parameters">
+				<tr>
+					<td class="text-center text-secondary text-small">{{ parameter.position }}</td>
+					<td>{{ parameter.name }}</td>
+					<td>{{ parameter.type }}</td>
+					<td>
+						<code v-if="parameter.default">{{ parameter.default }}</code>
+						<code v-if="!parameter.default && !parameter.required">null</code>
+					</td>
+					<td>
+						{{ parameter.description }}
+					</td>
+					<td class="text-right">
+						<template v-if="parameter.required">
+							<b-icon icon="exclamation-circle-fill" variant="danger"></b-icon>
+							<b class="text-danger">required</b>
+						</template>
+						<template v-else>
+							<i class="text-secondary text-small">optional</i>
+						</template>
+					</td>
+				</tr>
+				<tr v-if="parameter.children">
+					<td>&nbsp;</td>
+					<td colspan="5" class="px-0 pt-0">
+						<parameters :parameters="parameter.children">
+					</td>
+				</tr>
+			</template>
+		</table>`
 	});
 </script>
 </body>
