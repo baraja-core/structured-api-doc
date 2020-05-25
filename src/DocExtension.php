@@ -9,9 +9,20 @@ use Nette\Application\Application;
 use Nette\DI\CompilerExtension;
 use Nette\DI\Definitions\ServiceDefinition;
 use Nette\PhpGenerator\ClassType;
+use Nette\Security\User;
 
 final class DocExtension extends CompilerExtension
 {
+	public function beforeCompile(): void
+	{
+		if (\class_exists('Nette\Security\User') === true) {
+			/** @var ServiceDefinition $documentation */
+			$documentation = $this->getContainerBuilder()->getDefinitionByType(Documentation::class);
+			$documentation->addSetup('?->injectUser($this->getByType(?))', ['@self', User::class]);
+		}
+	}
+
+
 	/**
 	 * @param ClassType $class
 	 */
