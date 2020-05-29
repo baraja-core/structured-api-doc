@@ -7,6 +7,7 @@ namespace Baraja\StructuredApi\Doc;
 
 use Baraja\StructuredApi\ApiManager;
 use Baraja\StructuredApi\Doc\Descriptor\EndpointInfo;
+use Latte\Engine;
 use Nette\Security\User;
 
 final class Documentation
@@ -41,10 +42,7 @@ final class Documentation
 	public function run(): void
 	{
 		if ($this->isLoggedIn() === false) {
-			echo '<meta charset="UTF-8">';
-			echo '<meta name="robots" content="noindex, nofollow">';
-			echo '<title>REST API Documentation</title>';
-			echo '<p>API documentation is available only for logged users (with "admin" or "api-developer" role).</p>';
+			(new Engine)->render(__DIR__ . '/permissionDenied.latte');
 			die;
 		}
 
