@@ -41,12 +41,25 @@
 							<li v-for="error in errors" class="text-danger">{{ error }}</li>
 						</ul>
 					</template>
+					<div class="row">
+						<div v-for="endpoint in structure" class="col-sm-4 mb-4">
+							<div class="card">
+								<div class="card-body p-3">
+									<b-button variant="link" @click="activeEndpoint=endpoint.route" class="px-0">
+										{{ endpoint.name }}
+									</b-button>
+									<b-badge :variant="endpoint.actions.length === 0 ? 'warning' : 'secondary'" pill>
+										{{ endpoint.actions.length }}
+									</b-badge>
+									<p v-if="endpoint.description">{{ endpoint.description }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 				<div v-else>
 					<h1>{{ endpoint.name }}</h1>
-					<div v-if="endpoint.description" class="mb-3" style="white-space:pre">
-							{{ endpoint.description }}
-						</div>
+					<div v-if="endpoint.description" class="mb-3" style="white-space:pre">{{ endpoint.description }}</div>
 					<div v-if="endpoint.actions.length === 0">
 						<b-jumbotron>
 							<p>No API endpoints here.</p>
