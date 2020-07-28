@@ -24,6 +24,8 @@
 					<template v-for="endpoint in structure">
 						<b-list-group-item href="#" @click="activeEndpoint=endpoint.route"
 										   class="d-flex justify-content-between align-items-center">
+							<template v-if="endpoint.public === false">🔒</template>
+							<template v-else>🌐</template>
 							{{ endpoint.name }}
 							<b-badge :variant="endpoint.actions.length === 0 ? 'warning' : 'secondary'" pill>
 								{{ endpoint.actions.length }}
@@ -60,6 +62,26 @@
 				<div v-else>
 					<h1>{{ endpoint.name }}</h1>
 					<div v-if="endpoint.description" class="mb-3" style="white-space:pre">{{ endpoint.description }}</div>
+					<template v-if="endpoint.public === false">
+						<b-alert show variant="warning">
+							<h4 class="alert-heading">🔒 This endpoint is&nbsp;private!</h4>
+							<p>
+								This endpoint is&nbsp;systemically protected.
+								You must log in&nbsp;and have specific rights assigned to&nbsp;call this endpoint.
+								<a href="https://github.com/baraja-core/structured-api#-permissions" target="_blank">More info</a>
+							</p>
+						</b-alert>
+					</template>
+					<template v-else>
+						<b-alert show variant="success">
+							<h4 class="alert-heading">🌐 This endpoint is&nbsp;public!</h4>
+							<p>
+								This endpoint is&nbsp;publicly available from all over the&nbsp;Internet.
+								Anyone can use, receive and send any data at&nbsp;any time.
+								When implementing this endpoint, consider all security risks.
+							</p>
+						</b-alert>
+					</template>
 					<div v-if="endpoint.actions.length === 0">
 						<b-jumbotron>
 							<p>No API endpoints here.</p>
@@ -77,6 +99,10 @@
 								</code>
 							</template>
 							<b-card-text>
+								<div v-if="action.roles.length > 0" class="mb-3">
+									👮 Required roles:
+									<b-badge variant="primary" v-for="role in action.roles" class="mr-1">{{ role }}</b-badge>
+								</div>
 								<template v-if="action.description">
 									<p style="white-space:pre">{{ action.description }}</p>
 									<hr>

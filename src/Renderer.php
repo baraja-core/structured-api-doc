@@ -36,6 +36,7 @@ final class Renderer
 				'class' => $endpoint->getClass(),
 				'name' => $name ?: Strings::firstUpper(str_replace('-', ' ', $route)),
 				'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
+				'public' => $comment !== null && (bool) preg_match('/@public(?:$|\s|\n)/', (string) $comment),
 				'actions' => $actions,
 			];
 		}
@@ -65,6 +66,7 @@ final class Renderer
 			'httpMethod' => $action->getHttpMethod(),
 			'methodName' => $action->getMethodName(),
 			'description' => ($comment = $action->getComment()) === null ? null : Helpers::findCommentDescription($comment),
+			'roles' => $comment !== null ? \Baraja\StructuredApi\Helpers::parseRolesFromComment($comment) : [],
 			'throws' => $comment === null ? [] : Helpers::findAllCommentAnnotations($comment, 'throws'),
 			'parameters' => $this->processParameters($comment, $action->getParameters()),
 		];
