@@ -44,7 +44,7 @@
 				</div>
 				<div v-else>
 					<h1>{{ endpoint.name }}</h1>
-					<div v-if="endpoint.description" class="mb-3">
+					<div v-if="endpoint.description" class="mb-3" style="white-space:pre">
 							{{ endpoint.description }}
 						</div>
 					<div v-if="endpoint.actions.length === 0">
@@ -65,7 +65,7 @@
 							</template>
 							<b-card-text>
 								<template v-if="action.description">
-									<p>{{ action.description }}</p>
+									<p style="white-space:pre">{{ action.description }}</p>
 									<hr>
 								</template>
 								<p><b>Parameters:</b></p>
@@ -119,7 +119,18 @@
 		},
 		computed: {
 			endpoint() {
-				return this.activeEndpoint === null ? null : this.structure[this.activeEndpoint];
+				if (this.activeEndpoint === null) {
+					return null;
+				}
+
+				let activeEndpoint = null;
+				this.structure.forEach(item => {
+					if (this.activeEndpoint === item.route) {
+						activeEndpoint = item;
+					}
+				});
+
+				return activeEndpoint;
 			}
 		}
 	});

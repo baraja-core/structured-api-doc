@@ -21,7 +21,6 @@ final class Renderer
 	public function render(DocumentationInfo $documentation, array $errors = []): void
 	{
 		$structure = [];
-
 		foreach ($documentation->getEndpointsInfo() as $endpoint) {
 			$route = $endpoint->getRoute();
 			$comment = $endpoint->getComment();
@@ -32,7 +31,7 @@ final class Renderer
 				$actions[] = $this->processAction($action);
 			}
 
-			$structure[$route] = [
+			$structure[] = [
 				'route' => $route,
 				'class' => $endpoint->getClass(),
 				'name' => $name ?: Strings::firstUpper(str_replace('-', ' ', $route)),
@@ -40,6 +39,10 @@ final class Renderer
 				'actions' => $actions,
 			];
 		}
+
+		usort($structure, static function (array $a, array $b): int {
+			return strcmp($a['route'], $b['route']);
+		});
 
 		(new Engine)->render(__DIR__ . '/basic.latte', [
 			'documentation' => $documentation,
