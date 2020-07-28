@@ -9,9 +9,8 @@ use Nette\Http\Request;
 
 final class Helpers
 {
-	/**
-	 * @throws \Error
-	 */
+
+	/** @throws \Error */
 	public function __construct()
 	{
 		throw new \Error('Class ' . get_class($this) . ' is static and cannot be instantiated.');
@@ -21,9 +20,6 @@ final class Helpers
 	/**
 	 * Return current API path by current HTTP URL.
 	 * In case of CLI return empty string.
-	 *
-	 * @param Request $httpRequest
-	 * @return string
 	 */
 	public static function processPath(Request $httpRequest): string
 	{
@@ -34,8 +30,6 @@ final class Helpers
 	/**
 	 * Return current absolute URL.
 	 * Return null, if current URL does not exist (for example in CLI mode).
-	 *
-	 * @return string|null
 	 */
 	public static function getCurrentUrl(): ?string
 	{
@@ -50,9 +44,6 @@ final class Helpers
 
 	/**
 	 * Convert lots of comment styles to normalized multiline form.
-	 *
-	 * @param string $haystack
-	 * @return string
 	 */
 	public static function normalizeComment(string $haystack): string
 	{
@@ -66,9 +57,6 @@ final class Helpers
 
 	/**
 	 * Match first comment lines (to first annotation) as user description.
-	 *
-	 * @param string $haystack
-	 * @return string|null
 	 */
 	public static function findCommentDescription(string $haystack): ?string
 	{
@@ -84,11 +72,6 @@ final class Helpers
 	 * Find best matching comment line by given annotation.
 	 * In case of lots of annotations (for instance "param") you can use filtering by regex pattern.
 	 * Method return trimmed section after matched annotation or null.
-	 *
-	 * @param string $haystack
-	 * @param string $annotation
-	 * @param string|null $matchingPattern
-	 * @return string|null
 	 */
 	public static function findCommentAnnotation(string $haystack, string $annotation, ?string $matchingPattern = null): ?string
 	{
@@ -110,8 +93,6 @@ final class Helpers
 
 
 	/**
-	 * @param string $haystack
-	 * @param string $annotation
 	 * @return string[]
 	 */
 	public static function findAllCommentAnnotations(string $haystack, string $annotation): array
@@ -128,10 +109,6 @@ final class Helpers
 	}
 
 
-	/**
-	 * @param string $name
-	 * @return string
-	 */
 	public static function formatPresenterNameToUri(string $name): string
 	{
 		return trim((string) preg_replace_callback('/([A-Z])/', static function (array $match): string {

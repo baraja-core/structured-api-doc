@@ -30,10 +30,6 @@ final class ApiAction
 
 
 	/**
-	 * @param string $methodName
-	 * @param string $method
-	 * @param string $name
-	 * @param string|null $comment
 	 * @param \ReflectionParameter[] $parameters
 	 */
 	public function __construct(string $methodName, string $method, string $name, ?string $comment, array $parameters)
@@ -46,54 +42,36 @@ final class ApiAction
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getMethodName(): string
 	{
 		return $this->methodName;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getMethod(): string
 	{
 		return $this->method;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getHttpMethod(): string
 	{
 		return strtoupper(self::METHOD_TO_HTTP_METHOD_REWRITES[$method = strtolower($this->getMethod())] ?? $method);
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getName(): string
 	{
 		return $this->name;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getRoute(): string
 	{
 		return Helpers::formatPresenterNameToUri($this->getName());
 	}
 
 
-	/**
-	 * @return string|null
-	 */
 	public function getComment(): ?string
 	{
 		return $this->comment;

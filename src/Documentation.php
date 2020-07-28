@@ -26,9 +26,6 @@ final class Documentation
 	private $renderer;
 
 
-	/**
-	 * @param ApiManager $apiManager
-	 */
 	public function __construct(ApiManager $apiManager)
 	{
 		$this->apiManager = $apiManager;
@@ -63,7 +60,6 @@ final class Documentation
 
 
 	/**
-	 * @param User $user
 	 * @internal for DIC
 	 */
 	public function injectUser(User $user): void
@@ -75,8 +71,6 @@ final class Documentation
 	/**
 	 * Check if current user can show documentation.
 	 * In case of Nette User current identity must be logged in and be in role "admin" or "api-developer".
-	 *
-	 * @return bool
 	 */
 	public function isLoggedIn(): bool
 	{
@@ -94,8 +88,6 @@ final class Documentation
 
 	/**
 	 * Mark current request as logged in (for minimal dependency).
-	 *
-	 * @param bool $loggedIn
 	 */
 	public function setLoggedIn(bool $loggedIn): void
 	{

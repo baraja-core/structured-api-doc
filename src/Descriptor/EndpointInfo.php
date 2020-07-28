@@ -28,18 +28,17 @@ final class EndpointInfo
 	private $reflection;
 
 
-	/**
-	 * @param string $route
-	 * @param string $class
-	 * @param Endpoint $endpoint
-	 * @throws \ReflectionException
-	 */
 	public function __construct(string $route, string $class, Endpoint $endpoint)
 	{
+		try {
+			$this->reflection = new \ReflectionClass($endpoint);
+		} catch (\ReflectionException $e) {
+			throw new \InvalidArgumentException('Endpoint "' . \get_class($endpoint) . '" is invalid: ' . $e->getMessage(), $e->getCode(), $e);
+		}
+
 		$this->route = $route;
 		$this->class = $class;
 		$this->endpoint = $endpoint;
-		$this->reflection = new \ReflectionClass($endpoint);
 	}
 
 
@@ -71,27 +70,18 @@ final class EndpointInfo
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getRoute(): string
 	{
 		return $this->route;
 	}
 
 
-	/**
-	 * @return string
-	 */
 	public function getClass(): string
 	{
 		return $this->class;
 	}
 
 
-	/**
-	 * @return Endpoint
-	 */
 	public function getEndpoint(): Endpoint
 	{
 		return $this->endpoint;
