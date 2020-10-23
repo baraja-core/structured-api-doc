@@ -15,9 +15,10 @@ final class DocExtension extends CompilerExtension
 {
 	public function beforeCompile(): void
 	{
+		$documentation = $this->getContainerBuilder()->addDefinition($this->prefix('documentation'))
+			->setFactory(Documentation::class);
+
 		if (\class_exists('Nette\Security\User') === true) {
-			/** @var ServiceDefinition $documentation */
-			$documentation = $this->getContainerBuilder()->getDefinitionByType(Documentation::class);
 			$documentation->addSetup('?->injectUser($this->getByType(?))', ['@self', User::class]);
 		}
 	}
