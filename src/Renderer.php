@@ -15,7 +15,6 @@ final class Renderer
 
 
 	/**
-	 * @param DocumentationInfo $documentation
 	 * @param string[] $errors
 	 */
 	public function render(DocumentationInfo $documentation, array $errors = []): void
@@ -54,7 +53,6 @@ final class Renderer
 
 
 	/**
-	 * @param ApiAction $action
 	 * @return mixed[]
 	 */
 	private function processAction(ApiAction $action): array
@@ -74,7 +72,6 @@ final class Renderer
 
 
 	/**
-	 * @param string|null $comment
 	 * @param \ReflectionParameter[] $parameters
 	 * @return mixed[]
 	 */
@@ -88,7 +85,6 @@ final class Renderer
 			if ($typeName !== null && $typeName !== 'string' && $typeName !== 'int' && \class_exists($typeName) === true) {
 				return $this->processEntityProperties($typeName);
 			}
-
 			try {
 				$default = $parameter->getDefaultValue();
 			} catch (\ReflectionException $e) {
@@ -118,13 +114,10 @@ final class Renderer
 
 
 	/**
-	 * @param string $entity
 	 * @return mixed[]
 	 */
 	private function processEntityProperties(string $entity): array
 	{
-		$return = [];
-
 		try {
 			$ref = new \ReflectionClass($entity);
 		} catch (\ReflectionException $e) {
@@ -133,14 +126,9 @@ final class Renderer
 
 		$entityInstance = $ref->newInstanceWithoutConstructor();
 		$position = 0;
+		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyComment($property->getDocComment() ?? '');
-
-			$children = null;
-			if ($entityClass !== null) {
-				$children = $this->processEntityProperties((string) $entityClass);
-			}
-
 			$return[] = [
 				'position' => $position++,
 				'name' => $property->getName(),
@@ -148,7 +136,7 @@ final class Renderer
 				'default' => $defaultValue = $property->getValue($entityInstance),
 				'required' => $entityClass === null && $allowsNull === false && $defaultValue === null,
 				'description' => $description,
-				'children' => $children,
+				'children' => $entityClass !== null ? $this->processEntityProperties((string) $entityClass) : null,
 			];
 		}
 
@@ -157,7 +145,6 @@ final class Renderer
 
 
 	/**
-	 * @param string $comment
 	 * @return mixed[]
 	 */
 	private function inspectPropertyComment(string $comment): array
