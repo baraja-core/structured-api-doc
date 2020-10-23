@@ -42,6 +42,12 @@ final class Helpers
 	}
 
 
+	public static function isLocalRequest(): bool
+	{
+		return \in_array($_SERVER['REMOTE_ADDR'] ?? '', ['127.0.0.1', '::1'], true);
+	}
+
+
 	/**
 	 * Convert lots of comment styles to normalized multiline form.
 	 */

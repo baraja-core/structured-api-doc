@@ -44,7 +44,7 @@ final class Documentation
 	 */
 	public function run(): void
 	{
-		if ($this->isLoggedIn() === false) {
+		if ($this->isLoggedIn() === false && Helpers::isLocalRequest() === false) {
 			(new Engine)->render(__DIR__ . '/permissionDenied.latte');
 			die;
 		}
