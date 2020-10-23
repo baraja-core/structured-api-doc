@@ -7,7 +7,9 @@ namespace Baraja\StructuredApi\Doc;
 
 use Baraja\StructuredApi\ApiManager;
 use Baraja\StructuredApi\Doc\Descriptor\EndpointInfo;
+use Baraja\StructuredApi\Endpoint;
 use Latte\Engine;
+use Nette\DI\Container;
 use Nette\Security\User;
 
 final class Documentation
@@ -15,6 +17,9 @@ final class Documentation
 
 	/** @var ApiManager */
 	private $apiManager;
+
+	/** @var Container */
+	private $container;
 
 	/** @var User|null */
 	private $user;
@@ -26,9 +31,10 @@ final class Documentation
 	private $renderer;
 
 
-	public function __construct(ApiManager $apiManager)
+	public function __construct(ApiManager $apiManager, Container $container)
 	{
 		$this->apiManager = $apiManager;
+		$this->container = $container;
 		$this->renderer = new Renderer;
 	}
 
@@ -47,8 +53,11 @@ final class Documentation
 		$errors = [];
 
 		foreach ($endpoints = $this->apiManager->getEndpoints() as $route => $endpointClass) {
+			/** @var Endpoint $endpoint */
+			$endpoint = $this->container->getByType($endpointClass);
+
 			try {
-				$endpointInfos[] = new EndpointInfo($route, $endpointClass, $this->apiManager->createEndpointInstance($endpointClass, []));
+				$endpointInfos[] = new EndpointInfo($route, $endpointClass, $endpoint);
 			} catch (\ReflectionException $e) {
 				$errors[] = $e->getMessage();
 			}
