@@ -57,15 +57,23 @@ final class Renderer
 	 */
 	private function processAction(ApiAction $action): array
 	{
+		$throws = [];
+		if (($comment = $action->getComment()) !== null) {
+			foreach (Helpers::findAllCommentAnnotations($comment, 'throws') as $throwItem) {
+				$throws[] = explode('|', $throwItem);
+			}
+			$throws = array_merge([], ...$throws);
+		}
+
 		return [
 			'name' => $action->getName(),
 			'method' => $action->getMethod(),
 			'route' => $action->getRoute(),
 			'httpMethod' => $action->getHttpMethod(),
 			'methodName' => $action->getMethodName(),
-			'description' => ($comment = $action->getComment()) === null ? null : Helpers::findCommentDescription($comment),
+			'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
 			'roles' => $comment !== null ? \Baraja\StructuredApi\Helpers::parseRolesFromComment($comment) : [],
-			'throws' => $comment === null ? [] : Helpers::findAllCommentAnnotations($comment, 'throws'),
+			'throws' => $throws,
 			'parameters' => $this->processParameters($comment, $action->getParameters()),
 		];
 	}
