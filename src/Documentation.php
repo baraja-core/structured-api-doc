@@ -14,21 +14,15 @@ use Nette\Security\User;
 
 final class Documentation
 {
+	private ApiManager $apiManager;
 
-	/** @var ApiManager */
-	private $apiManager;
+	private Container $container;
 
-	/** @var Container */
-	private $container;
+	private ?User $user;
 
-	/** @var User|null */
-	private $user;
+	private bool $loggedIn = false;
 
-	/** @var bool */
-	private $loggedIn = false;
-
-	/** @var Renderer */
-	private $renderer;
+	private Renderer $renderer;
 
 
 	public function __construct(ApiManager $apiManager, Container $container)

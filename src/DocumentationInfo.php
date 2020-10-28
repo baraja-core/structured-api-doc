@@ -15,10 +15,10 @@ final class DocumentationInfo
 	 *
 	 * @var string[]
 	 */
-	private $endpoints;
+	private array $endpoints;
 
 	/** @var EndpointInfo[] */
-	private $endpointsInfo;
+	private array $endpointsInfo;
 
 
 	/**

@@ -40,9 +40,7 @@ final class Renderer
 			];
 		}
 
-		usort($structure, static function (array $a, array $b): int {
-			return strcmp($a['route'], $b['route']);
-		});
+		usort($structure, fn (array $a, array $b): int => strcmp($a['route'], $b['route']));
 
 		(new Engine)->render(__DIR__ . '/basic.latte', [
 			'documentation' => $documentation,

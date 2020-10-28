@@ -13,20 +13,16 @@ final class ApiAction
 	/** @var string[] */
 	private const METHOD_TO_HTTP_METHOD_REWRITES = ['action' => 'GET'];
 
-	/** @var string */
-	private $methodName;
+	private string $methodName;
 
-	/** @var string */
-	private $method;
+	private string $method;
 
-	/** @var string */
-	private $name;
+	private string $name;
 
-	/** @var string|null */
-	private $comment;
+	private ?string $comment;
 
 	/** @var \ReflectionParameter[] */
-	private $parameters;
+	private array $parameters;
 
 
 	/**

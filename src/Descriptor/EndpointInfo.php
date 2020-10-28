@@ -13,19 +13,15 @@ final class EndpointInfo
 {
 
 	/** @var string[] */
-	private static $prefixes = ['action', 'create', 'post', 'delete', 'put', 'patch'];
+	private static array $prefixes = ['action', 'create', 'post', 'delete', 'put', 'patch'];
 
-	/** @var string */
-	private $route;
+	private string $route;
 
-	/** @var string */
-	private $class;
+	private string $class;
 
-	/** @var Endpoint */
-	private $endpoint;
+	private Endpoint $endpoint;
 
-	/** @var \ReflectionClass */
-	private $reflection;
+	private \ReflectionClass $reflection;
 
 
 	public function __construct(string $route, string $class, Endpoint $endpoint)
@@ -47,9 +43,8 @@ final class EndpointInfo
 	 */
 	public function getActionMethods(): array
 	{
-		$return = [];
 		$pattern = '/^(?<method>' . implode('|', self::$prefixes) . ')(?<name>.+)$/';
-
+		$return = [];
 		foreach ($this->reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
 			if (preg_match($pattern, $method->getName(), $match)) {
 				$return[] = new ApiAction($match[0], $match[1], Strings::firstLower($match[2]), $method->getDocComment() ?: null, $method->getParameters());
