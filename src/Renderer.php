@@ -135,16 +135,15 @@ final class Renderer
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			$property->setAccessible(true);
-			$defaultValue = $property->isInitialized($entityInstance)
-				? $property->getValue($entityInstance)
-				: 'unknown';
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
+			$defaultValue = $this->resolvePropertyDefaultValue($property, $entityInstance, $entityClass);
 			$return[] = [
 				'position' => $position++,
 				'name' => $property->getName(),
 				'type' => $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
 				'default' => $defaultValue !== 'unknown' ? $defaultValue : '',
-				'required' => $allowsNull === false || ($entityClass === null && $defaultValue === null),
+				'required' => ($entityClass !== null && $allowsNull === false)
+					|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
 				'description' => $description,
 				'children' => $entityClass !== null ? $this->processEntityProperties((string) $entityClass) : null,
 			];
@@ -197,5 +196,25 @@ final class Renderer
 		}
 
 		return [$description, $allowsNull, $scalarTypes, $entityClass];
+	}
+
+
+	private function resolvePropertyDefaultValue(\ReflectionProperty $property, object $entityInstance, ?string $entityClass): ?string
+	{
+		if (($type = $property->getType()) !== null && $type->allowsNull() === false && $entityClass !== null) {
+			return '';
+		}
+		if ($property->isInitialized($entityInstance)) {
+			if (($defaultValue = $property->getValue($entityInstance)) === null) {
+				return null;
+			}
+			if (\is_bool($defaultValue)) {
+				return $defaultValue ? 'true' : 'false';
+			}
+
+			return (string) $defaultValue;
+		}
+
+		return 'unknown';
 	}
 }
