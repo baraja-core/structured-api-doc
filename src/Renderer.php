@@ -135,13 +135,16 @@ final class Renderer
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			$property->setAccessible(true);
+			$defaultValue = $property->isInitialized($entityInstance)
+				? $property->getValue($entityInstance)
+				: 'unknown';
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$return[] = [
 				'position' => $position++,
 				'name' => $property->getName(),
 				'type' => $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
-				'default' => $property->isInitialized($entityInstance) ? $defaultValue = $property->getValue($entityInstance) : '',
-				'required' => $allowsNull === false || ($entityClass === null && (isset($defaultValue) && $defaultValue === null)),
+				'default' => $defaultValue !== 'unknown' ? $defaultValue : '',
+				'required' => $allowsNull === false || ($entityClass === null && $defaultValue === null),
 				'description' => $description,
 				'children' => $entityClass !== null ? $this->processEntityProperties((string) $entityClass) : null,
 			];
