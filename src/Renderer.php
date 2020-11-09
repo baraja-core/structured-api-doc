@@ -134,13 +134,14 @@ final class Renderer
 		$position = 0;
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
-			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyComment($property->getDocComment() ?? '');
+			$property->setAccessible(true);
+			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$return[] = [
 				'position' => $position++,
 				'name' => $property->getName(),
 				'type' => $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
-				'default' => $defaultValue = $property->getValue($entityInstance),
-				'required' => $entityClass === null && $allowsNull === false && $defaultValue === null,
+				'default' => $property->isInitialized($entityInstance) ? $defaultValue = $property->getValue($entityInstance) : '',
+				'required' => $allowsNull === false || ($entityClass === null && (isset($defaultValue) && $defaultValue === null)),
 				'description' => $description,
 				'children' => $entityClass !== null ? $this->processEntityProperties((string) $entityClass) : null,
 			];
@@ -153,9 +154,20 @@ final class Renderer
 	/**
 	 * @return mixed[]
 	 */
-	private function inspectPropertyComment(string $comment): array
+	private function inspectPropertyInfo(\ReflectionProperty $property): array
 	{
-		if (preg_match('/\@var\s+(\S+)/', $comment, $parser)) {
+		$comment = $property->getDocComment() ?: '';
+		$propertyType = \Baraja\ServiceMethodInvoker\Helpers::resolvePropertyType($property);
+
+		if ($propertyType !== null) {
+			$requiredType = $propertyType;
+			if (method_exists($property, 'getType')
+				&& ($propertyNativeType = $property->getType()) !== null
+				&& method_exists($propertyNativeType, 'allowsNull')
+			) {
+				$requiredType .= $propertyNativeType->allowsNull() ? '|null' : '';
+			}
+		} elseif ($comment !== '' && preg_match('/\@var\s+(\S+)/', $comment, $parser)) { // scalar types only!
 			$requiredType = $parser[1] ?: 'null';
 		} else {
 			$requiredType = 'null';
