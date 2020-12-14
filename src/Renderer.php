@@ -124,6 +124,9 @@ final class Renderer
 	 */
 	private function processEntityProperties(string $entity): array
 	{
+		if (\class_exists($entity) === false) {
+			throw new \InvalidArgumentException('Entity "' . $entity . '" is not valid class.');
+		}
 		try {
 			$ref = new \ReflectionClass($entity);
 		} catch (\ReflectionException $e) {
