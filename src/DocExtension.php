@@ -26,6 +26,9 @@ final class DocExtension extends CompilerExtension
 
 	public function afterCompile(ClassType $class): void
 	{
+		if (PHP_SAPI === 'cli') {
+			return;
+		}
 		/** @var ServiceDefinition $application */
 		$application = $this->getContainerBuilder()->getDefinitionByType(Application::class);
 
