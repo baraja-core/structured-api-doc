@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Baraja\StructuredApi\Doc;
 
 
+use Baraja\Url\Url;
 use Nette\Http\Request;
 
 final class Helpers
@@ -23,22 +24,7 @@ final class Helpers
 	 */
 	public static function processPath(Request $httpRequest): string
 	{
-		return trim(str_replace(rtrim($httpRequest->getUrl()->withoutUserInfo()->getBaseUrl(), '/'), '', (string) self::getCurrentUrl()), '/');
-	}
-
-
-	/**
-	 * Return current absolute URL.
-	 * Return null, if current URL does not exist (for example in CLI mode).
-	 */
-	public static function getCurrentUrl(): ?string
-	{
-		if (!isset($_SERVER['REQUEST_URI'], $_SERVER['HTTP_HOST'])) {
-			return null;
-		}
-
-		return (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-			. '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+		return trim(str_replace(rtrim($httpRequest->getUrl()->withoutUserInfo()->getBaseUrl(), '/'), '', Url::get()->getCurrentUrl()), '/');
 	}
 
 
