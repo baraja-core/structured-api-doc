@@ -23,7 +23,6 @@
 		"tracy/tracy": "^2.7",
 		"nette/security": "^3.0",
 		"phpstan/phpstan-nette": "^0.12.6",
-		"symplify/easy-coding-standard": "^7.2",
 		"spaze/phpstan-disallowed-calls": "^1.1"
 	},
 	"autoload": {
