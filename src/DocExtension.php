@@ -44,7 +44,7 @@ final class DocExtension extends CompilerExtension
 			. "\t\t" . '};' . "\n"
 			. "\t" . '}' . "\n"
 			. '})();' . "\n",
-			[$application->getName()]
+			[$application->getName()],
 		);
 	}
 }

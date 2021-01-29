@@ -10,11 +10,10 @@ use Nette\Http\Request;
 
 final class Helpers
 {
-
 	/** @throws \Error */
 	public function __construct()
 	{
-		throw new \Error('Class ' . get_class($this) . ' is static and cannot be instantiated.');
+		throw new \Error('Class ' . static::class . ' is static and cannot be instantiated.');
 	}
 
 
@@ -65,8 +64,11 @@ final class Helpers
 	 * In case of lots of annotations (for instance "param") you can use filtering by regex pattern.
 	 * Method return trimmed section after matched annotation or null.
 	 */
-	public static function findCommentAnnotation(string $haystack, string $annotation, ?string $matchingPattern = null): ?string
-	{
+	public static function findCommentAnnotation(
+		string $haystack,
+		string $annotation,
+		?string $matchingPattern = null
+	): ?string {
 		foreach (explode("\n", $haystack) as $line) {
 			if (preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) && ($parser[1] ?? '') === $annotation) {
 				if ($matchingPattern !== null) {
@@ -92,7 +94,11 @@ final class Helpers
 		$return = [];
 
 		foreach (explode("\n", $haystack) as $line) {
-			if (preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) && ($parser[1] ?? '') === $annotation && ($content = trim($parser[2] ?? '')) !== '') {
+			if (
+				preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser)
+				&& ($parser[1] ?? '') === $annotation
+				&& ($content = trim($parser[2] ?? '')) !== ''
+			) {
 				$return[] = $content;
 			}
 		}
@@ -103,8 +109,6 @@ final class Helpers
 
 	public static function formatPresenterNameToUri(string $name): string
 	{
-		return trim((string) preg_replace_callback('/([A-Z])/', static function (array $match): string {
-			return '-' . mb_strtolower($match[1], 'UTF-8');
-		}, $name), '-');
+		return trim((string) preg_replace_callback('/([A-Z])/', static fn (array $match): string => '-' . mb_strtolower($match[1], 'UTF-8'), $name), '-');
 	}
 }

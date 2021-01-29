@@ -9,8 +9,6 @@ use Baraja\StructuredApi\Doc\Helpers;
 
 final class ApiAction
 {
-
-	/** @var string[] */
 	private const METHOD_TO_HTTP_METHOD_REWRITES = ['action' => 'GET'];
 
 	private string $methodName;

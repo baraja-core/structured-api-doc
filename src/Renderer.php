@@ -23,7 +23,9 @@ final class Renderer
 		foreach ($documentation->getEndpointsInfo() as $endpoint) {
 			$route = $endpoint->getRoute();
 			$comment = $endpoint->getComment();
-			$name = $comment === null ? null : Helpers::findCommentAnnotation($comment, 'endpointName');
+			$name = $comment === null
+				? null
+				: Helpers::findCommentAnnotation($comment, 'endpointName');
 
 			$actions = [];
 			foreach ($endpoint->getActionMethods() as $action) {
@@ -88,7 +90,12 @@ final class Renderer
 		foreach ($parameters as $parameter) {
 			$type = $parameter->getType();
 			$typeName = $type === null ? null : $type->getName();
-			if ($typeName !== null && $typeName !== 'string' && $typeName !== 'int' && \class_exists($typeName) === true) {
+			if (
+				$typeName !== null
+				&& $typeName !== 'string'
+				&& $typeName !== 'int'
+				&& \class_exists($typeName) === true
+			) {
 				return $this->processEntityProperties($typeName);
 			}
 			try {
@@ -202,8 +209,11 @@ final class Renderer
 	}
 
 
-	private function resolvePropertyDefaultValue(\ReflectionProperty $property, object $entityInstance, ?string $entityClass): ?string
-	{
+	private function resolvePropertyDefaultValue(
+		\ReflectionProperty $property,
+		object $entityInstance,
+		?string $entityClass
+	): ?string {
 		if (($type = $property->getType()) !== null && $type->allowsNull() === false && $entityClass !== null) {
 			return '';
 		}
