@@ -109,6 +109,6 @@ final class Helpers
 
 	public static function formatPresenterNameToUri(string $name): string
 	{
-		return trim((string) preg_replace_callback('/([A-Z])/', static fn (array $match): string => '-' . mb_strtolower($match[1], 'UTF-8'), $name), '-');
+		return trim((string) preg_replace_callback('/([A-Z])/', static fn(array $match): string => '-' . mb_strtolower($match[1], 'UTF-8'), $name), '-');
 	}
 }
