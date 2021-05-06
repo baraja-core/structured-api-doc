@@ -29,7 +29,7 @@ final class EndpointInfo
 		try {
 			$this->reflection = new \ReflectionClass($endpoint);
 		} catch (\ReflectionException $e) {
-			throw new \InvalidArgumentException('Endpoint "' . \get_class($endpoint) . '" is invalid: ' . $e->getMessage(), $e->getCode(), $e);
+			throw new \InvalidArgumentException('Endpoint "' . $endpoint::class . '" is invalid: ' . $e->getMessage(), $e->getCode(), $e);
 		}
 
 		$this->route = $route;
