@@ -16,12 +16,8 @@ Imagine some API endpoint (implementing [Baraja Structured API](https://github.c
  */
 final class ArticleEndpoint extends BaseEndpoint
 {
-
-   /**
-    * @var ArticleManagerAccessor
-    * @inject
-    */
-   public $articleManager;
+   #[Inject]
+   public ArticleManagerAccessor $articleManager;
 
 
    /**
