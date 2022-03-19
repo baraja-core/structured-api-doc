@@ -214,18 +214,23 @@ final class Renderer
 		object $entityInstance,
 		?string $entityClass
 	): ?string {
-		if (($type = $property->getType()) !== null && $type->allowsNull() === false && $entityClass !== null) {
+		$type = $property->getType();
+		if ($entityClass !== null && $type !== null && $type->allowsNull() === false) {
 			return '';
 		}
 		if ($property->isInitialized($entityInstance)) {
-			if (($defaultValue = $property->getValue($entityInstance)) === null) {
+			$defaultValue = $property->getValue($entityInstance);
+			if ($defaultValue === null) {
 				return null;
 			}
-			if (\is_bool($defaultValue)) {
+			if (is_bool($defaultValue)) {
 				return $defaultValue ? 'true' : 'false';
 			}
+			if (is_scalar($defaultValue)) {
+				return (string) $defaultValue;
+			}
 
-			return (string) $defaultValue;
+			return (string) str_replace("\n", '', print_r($defaultValue, true));
 		}
 
 		return 'unknown';
