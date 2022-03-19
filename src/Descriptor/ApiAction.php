@@ -26,12 +26,12 @@ final class ApiAction
 	/**
 	 * @param \ReflectionParameter[] $parameters
 	 */
-	public function __construct(string $methodName, string $method, string $name, ?string $comment, array $parameters)
+	public function __construct(string $methodName, string $method, string $name, string $comment, array $parameters)
 	{
 		$this->methodName = $methodName;
 		$this->method = $method;
 		$this->name = $name;
-		$this->comment = $comment === null ? null : Helpers::normalizeComment($comment);
+		$this->comment = $comment !== '' ? Helpers::normalizeComment($comment) : null;
 		$this->parameters = $parameters;
 	}
 

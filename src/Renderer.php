@@ -35,9 +35,9 @@ final class Renderer
 			$structure[] = [
 				'route' => $route,
 				'class' => $endpoint->getClass(),
-				'name' => $name ?: Strings::firstUpper(str_replace('-', ' ', $route)),
+				'name' => $name ?? Strings::firstUpper(str_replace('-', ' ', $route)),
 				'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
-				'public' => $comment !== null && preg_match('/@public(?:$|\s|\n)/', (string) $comment) === 1,
+				'public' => $comment !== null && preg_match('/@public(?:$|\s|\n)/', $comment) === 1,
 				'actions' => $actions,
 			];
 		}
@@ -167,12 +167,8 @@ final class Renderer
 		if (\class_exists($entity) === false) {
 			throw new \InvalidArgumentException(sprintf('Entity "%s" is not valid class.', $entity));
 		}
-		try {
-			$ref = new \ReflectionClass($entity);
-		} catch (\ReflectionException) {
-			return [];
-		}
 
+		$ref = new \ReflectionClass($entity);
 		$entityInstance = $ref->newInstanceWithoutConstructor();
 		$position = 0;
 		$return = [];
@@ -188,7 +184,7 @@ final class Renderer
 				'required' => ($entityClass !== null && $allowsNull === false)
 					|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
 				'description' => $description,
-				'children' => $entityClass !== null ? $this->processEntityProperties((string) $entityClass) : null,
+				'children' => $entityClass !== null ? $this->processEntityProperties($entityClass) : null,
 			];
 		}
 
@@ -201,15 +197,13 @@ final class Renderer
 	 */
 	private function inspectPropertyInfo(\ReflectionProperty $property): array
 	{
-		$comment = $property->getDocComment() ?: '';
+		$comment = (string) $property->getDocComment();
 		$propertyType = \Baraja\ServiceMethodInvoker\Helpers::resolvePropertyType($property);
 
 		if ($propertyType !== null) {
 			$requiredType = $propertyType;
-			if (method_exists($property, 'getType')
-				&& ($propertyNativeType = $property->getType()) !== null
-				&& method_exists($propertyNativeType, 'allowsNull')
-			) {
+			$propertyNativeType = $property->getType();
+			if ($propertyNativeType !== null) {
 				$requiredType .= $propertyNativeType->allowsNull() ? '|null' : '';
 			}
 		} elseif ($comment !== '' && preg_match('/@var\s+(\S+)/', $comment, $parser) === 1) { // scalar types only!
@@ -232,10 +226,12 @@ final class Renderer
 			}
 		}
 
+		$description = null;
 		if ($comment !== '') {
-			$description = Helpers::findCommentDescription(Helpers::normalizeComment($comment)) ?: null;
-		} else {
-			$description = null;
+			$comment = (string) Helpers::findCommentDescription(Helpers::normalizeComment($comment));
+			if ($comment !== '') {
+				$description = $comment;
+			}
 		}
 
 		return [$description, $allowsNull, $scalarTypes, $entityClass];
@@ -263,7 +259,7 @@ final class Renderer
 				return (string) $defaultValue;
 			}
 
-			return (string) str_replace("\n", '', print_r($defaultValue, true));
+			return str_replace("\n", '', print_r($defaultValue, true));
 		}
 
 		return 'unknown';

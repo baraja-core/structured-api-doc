@@ -46,7 +46,8 @@ final class Documentation
 		$endpointInfos = [];
 		$errors = [];
 
-		foreach ($endpoints = $this->apiManager->getEndpoints() as $route => $endpointClass) {
+		$endpoints = $this->apiManager->getEndpoints();
+		foreach ($endpoints as $route => $endpointClass) {
 			/** @var Endpoint $endpoint */
 			$endpoint = $this->container->getByType($endpointClass);
 

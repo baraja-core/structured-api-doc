@@ -11,8 +11,7 @@ use Nette\Utils\Strings;
 
 final class EndpointInfo
 {
-
-	/** @var string[] */
+	/** @var array<int, string> */
 	private static array $prefixes = ['action', 'create', 'post', 'delete', 'put', 'patch'];
 
 	private string $route;
@@ -26,12 +25,7 @@ final class EndpointInfo
 
 	public function __construct(string $route, string $class, Endpoint $endpoint)
 	{
-		try {
-			$this->reflection = new \ReflectionClass($endpoint);
-		} catch (\ReflectionException $e) {
-			throw new \InvalidArgumentException('Endpoint "' . $endpoint::class . '" is invalid: ' . $e->getMessage(), $e->getCode(), $e);
-		}
-
+		$this->reflection = new \ReflectionClass($endpoint);
 		$this->route = $route;
 		$this->class = $class;
 		$this->endpoint = $endpoint;
@@ -46,8 +40,14 @@ final class EndpointInfo
 		$pattern = '/^(?<method>' . implode('|', self::$prefixes) . ')(?<name>.+)$/';
 		$return = [];
 		foreach ($this->reflection->getMethods(\ReflectionMethod::IS_PUBLIC) as $method) {
-			if (preg_match($pattern, $method->getName(), $match)) {
-				$return[] = new ApiAction($match[0], $match[1], Strings::firstLower($match[2]), $method->getDocComment() ?: null, $method->getParameters());
+			if (preg_match($pattern, $method->getName(), $match) === 1) {
+				$return[] = new ApiAction(
+					methodName: $match[0],
+					method: $match[1],
+					name: Strings::firstLower($match[2]),
+					comment: (string) $method->getDocComment(),
+					parameters: $method->getParameters(),
+				);
 			}
 		}
 
@@ -57,8 +57,9 @@ final class EndpointInfo
 
 	public function getComment(): ?string
 	{
-		if (($comment = $this->reflection->getDocComment() ?: null) !== null) {
-			return Helpers::normalizeComment((string) $comment);
+		$comment = trim((string) $this->reflection->getDocComment());
+		if ($comment !== '') {
+			return Helpers::normalizeComment($comment);
 		}
 
 		return null;

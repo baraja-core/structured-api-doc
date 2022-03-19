@@ -51,8 +51,11 @@ final class Helpers
 	 */
 	public static function findCommentDescription(string $haystack): ?string
 	{
-		if (preg_match('/^((?:.|\n)*?)(?:@|$)/', $haystack, $match)) {
-			return trim($match[1]) ?: null;
+		if (preg_match('/^((?:.|\n)*?)(?:@|$)/', $haystack, $match) === 1) {
+			$value = trim($match[1]);
+			if ($value !== '') {
+				return $value;
+			}
 		}
 
 		return null;
@@ -70,9 +73,9 @@ final class Helpers
 		?string $matchingPattern = null
 	): ?string {
 		foreach (explode("\n", $haystack) as $line) {
-			if (preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) && ($parser[1] ?? '') === $annotation) {
+			if (preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) === 1 && ($parser[1] ?? '') === $annotation) {
 				if ($matchingPattern !== null) {
-					if (preg_match('/^' . $matchingPattern . '$/', $parser[0])) {
+					if (preg_match('/^' . $matchingPattern . '$/', $parser[0]) === 1) {
 						return $parser[0];
 					}
 					continue;
@@ -95,7 +98,7 @@ final class Helpers
 
 		foreach (explode("\n", $haystack) as $line) {
 			if (
-				preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser)
+				preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) === 1
 				&& ($parser[1] ?? '') === $annotation
 				&& ($content = trim($parser[2] ?? '')) !== ''
 			) {

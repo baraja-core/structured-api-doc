@@ -9,21 +9,20 @@ use Baraja\StructuredApi\Doc\Descriptor\EndpointInfo;
 
 final class DocumentationInfo
 {
-
 	/**
 	 * Simple list of all endpoints (route => className)
 	 *
-	 * @var string[]
+	 * @var array<string, class-string>
 	 */
 	private array $endpoints;
 
-	/** @var EndpointInfo[] */
+	/** @var array<int, EndpointInfo> */
 	private array $endpointsInfo;
 
 
 	/**
-	 * @param string[] $endpoints
-	 * @param EndpointInfo[] $endpointsInfo
+	 * @param array<string, class-string> $endpoints
+	 * @param array<int, EndpointInfo> $endpointsInfo
 	 */
 	public function __construct(array $endpoints, array $endpointsInfo)
 	{
@@ -33,7 +32,7 @@ final class DocumentationInfo
 
 
 	/**
-	 * @return string[]
+	 * @return array<string, class-string>
 	 */
 	public function getEndpoints(): array
 	{
@@ -42,7 +41,7 @@ final class DocumentationInfo
 
 
 	/**
-	 * @return EndpointInfo[]
+	 * @return array<int, EndpointInfo>
 	 */
 	public function getEndpointsInfo(): array
 	{
