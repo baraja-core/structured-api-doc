@@ -37,12 +37,12 @@ final class Renderer
 				'class' => $endpoint->getClass(),
 				'name' => $name ?: Strings::firstUpper(str_replace('-', ' ', $route)),
 				'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
-				'public' => $comment !== null && (bool) preg_match('/@public(?:$|\s|\n)/', (string) $comment),
+				'public' => $comment !== null && preg_match('/@public(?:$|\s|\n)/', (string) $comment) === 1,
 				'actions' => $actions,
 			];
 		}
 
-		usort($structure, fn(array $a, array $b): int => strcmp($a['route'], $b['route']));
+		usort($structure, static fn(array $a, array $b): int => strcmp($a['route'], $b['route']));
 
 		(new Engine)->render(__DIR__ . '/basic.latte', [
 			'documentation' => $documentation,
@@ -53,12 +53,30 @@ final class Renderer
 
 
 	/**
-	 * @return mixed[]
+	 * @return array{
+	 *    name: string,
+	 *    method: string,
+	 *    route: string,
+	 *    httpMethod: string,
+	 *    methodName: string,
+	 *    description: string|null,
+	 *    roles: array<int, string>|null,
+	 *    throws: array<int, string>,
+	 *    parameters: array<int, array{
+	 *        position: int,
+	 *        name: non-empty-string,
+	 *        type: string,
+	 *        default: mixed|null,
+	 *        required: bool,
+	 *        description: string|null
+	 *     }>
+	 * }
 	 */
 	private function processAction(ApiAction $action): array
 	{
 		$throws = [];
-		if (($comment = $action->getComment()) !== null) {
+		$comment = $action->getComment();
+		if ($comment !== null) {
 			foreach (Helpers::findAllCommentAnnotations($comment, 'throws') as $throwItem) {
 				$throws[] = explode('|', $throwItem);
 			}
@@ -80,16 +98,22 @@ final class Renderer
 
 
 	/**
-	 * @param \ReflectionParameter[] $parameters
-	 * @return mixed[]
+	 * @param array<int, \ReflectionParameter> $parameters
+	 * @return array<int, array{
+	 *    position: int,
+	 *    name: non-empty-string,
+	 *    type: string,
+	 *    default: mixed|null,
+	 *    required: bool,
+	 *    description: string|null
+	 * }>
 	 */
 	private function processParameters(?string $comment, array $parameters): array
 	{
 		$return = [];
-
 		foreach ($parameters as $parameter) {
 			$type = $parameter->getType();
-			$typeName = $type === null ? null : $type->getName();
+			$typeName = $type?->getName();
 			if (
 				$typeName !== null
 				&& $typeName !== 'string'
@@ -100,22 +124,23 @@ final class Renderer
 			}
 			try {
 				$default = $parameter->getDefaultValue();
-			} catch (\ReflectionException $e) {
+			} catch (\ReflectionException) {
 				$default = null;
 			}
 
 			$description = null;
 			if ($comment !== null) {
 				$pattern = '@(\S+)\s*(?:.*?)\$' . preg_quote($parameter->getName(), '/') . '\s+(.*?)';
-				if (($paramAnnotation = Helpers::findCommentAnnotation($comment, 'param', $pattern)) !== null) {
-					$description = preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
+				$paramAnnotation = Helpers::findCommentAnnotation($comment, 'param', $pattern);
+				if ($paramAnnotation !== null) {
+					$description = (string) preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
 				}
 			}
 
 			$return[] = [
 				'position' => $parameter->getPosition(),
 				'name' => $parameter->getName(),
-				'type' => $type === null ? '-' : $type->getName() . ($type->allowsNull() ? '|null' : ''),
+				'type' => $type === null ? '-' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : ''),
 				'default' => $default,
 				'required' => $parameter->isOptional() === false,
 				'description' => $description,
@@ -127,16 +152,24 @@ final class Renderer
 
 
 	/**
-	 * @return mixed[]
+	 * @return array<int, array{
+	 *    position: int,
+	 *    name: non-empty-string,
+	 *    type: class-string|string,
+	 *    default: string,
+	 *    required: bool,
+	 *    description: string|null,
+	 *    children: mixed[]|null
+	 * }>
 	 */
 	private function processEntityProperties(string $entity): array
 	{
 		if (\class_exists($entity) === false) {
-			throw new \InvalidArgumentException('Entity "' . $entity . '" is not valid class.');
+			throw new \InvalidArgumentException(sprintf('Entity "%s" is not valid class.', $entity));
 		}
 		try {
 			$ref = new \ReflectionClass($entity);
-		} catch (\ReflectionException $e) {
+		} catch (\ReflectionException) {
 			return [];
 		}
 
@@ -164,7 +197,7 @@ final class Renderer
 
 
 	/**
-	 * @return mixed[]
+	 * @return array{0: string|null, 1: bool, 2: array<int, string>, 3: class-string|null}
 	 */
 	private function inspectPropertyInfo(\ReflectionProperty $property): array
 	{
@@ -179,7 +212,7 @@ final class Renderer
 			) {
 				$requiredType .= $propertyNativeType->allowsNull() ? '|null' : '';
 			}
-		} elseif ($comment !== '' && preg_match('/\@var\s+(\S+)/', $comment, $parser)) { // scalar types only!
+		} elseif ($comment !== '' && preg_match('/@var\s+(\S+)/', $comment, $parser) === 1) { // scalar types only!
 			$requiredType = $parser[1] ?: 'null';
 		} else {
 			$requiredType = 'null';
