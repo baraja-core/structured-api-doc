@@ -6,6 +6,7 @@ namespace Baraja\StructuredApi\Doc;
 
 
 use Baraja\StructuredApi\Doc\Descriptor\ApiAction;
+use Baraja\StructuredApi\Doc\DTO\EntityPropertyMeta;
 use Latte\Engine;
 use Nette\Utils\Strings;
 
@@ -83,6 +84,9 @@ final class Renderer
 			$throws = array_merge([], ...$throws);
 		}
 
+		/** @phpstan-ignore-next-line */
+		$roles = $comment !== null ? \Baraja\StructuredApi\Helpers::parseRolesFromComment($comment) : [];
+
 		return [
 			'name' => $action->getName(),
 			'method' => $action->getMethod(),
@@ -90,7 +94,7 @@ final class Renderer
 			'httpMethod' => $action->getHttpMethod(),
 			'methodName' => $action->getMethodName(),
 			'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
-			'roles' => $comment !== null ? \Baraja\StructuredApi\Helpers::parseRolesFromComment($comment) : [],
+			'roles' => $roles,
 			'throws' => $throws,
 			'parameters' => $this->processParameters($comment, $action->getParameters()),
 		];
@@ -102,7 +106,7 @@ final class Renderer
 	 * @return array<int, array{
 	 *    position: int,
 	 *    name: non-empty-string,
-	 *    type: string,
+	 *    type: non-empty-string,
 	 *    default: mixed|null,
 	 *    required: bool,
 	 *    description: string|null
@@ -120,7 +124,10 @@ final class Renderer
 				&& $typeName !== 'int'
 				&& \class_exists($typeName) === true
 			) {
-				return $this->processEntityProperties($typeName);
+				return array_map(
+					static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
+					$this->processEntityProperties($typeName),
+				);
 			}
 			try {
 				$default = $parameter->getDefaultValue();
@@ -136,6 +143,7 @@ final class Renderer
 					$description = (string) preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
 				}
 			}
+			assert($parameter->getName() !== '');
 
 			$return[] = [
 				'position' => $parameter->getPosition(),
@@ -152,15 +160,7 @@ final class Renderer
 
 
 	/**
-	 * @return array<int, array{
-	 *    position: int,
-	 *    name: non-empty-string,
-	 *    type: class-string|string,
-	 *    default: string,
-	 *    required: bool,
-	 *    description: string|null,
-	 *    children: mixed[]|null
-	 * }>
+	 * @return array<int, EntityPropertyMeta>
 	 */
 	private function processEntityProperties(string $entity): array
 	{
@@ -174,18 +174,19 @@ final class Renderer
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			$property->setAccessible(true);
+			assert($property->getName() !== '');
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$defaultValue = $this->resolvePropertyDefaultValue($property, $entityInstance, $entityClass);
-			$return[] = [
-				'position' => $position++,
-				'name' => $property->getName(),
-				'type' => $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
-				'default' => $defaultValue !== 'unknown' ? $defaultValue : '',
-				'required' => ($entityClass !== null && $allowsNull === false)
+			$return[] = new EntityPropertyMeta(
+				position: $position++,
+				name: $property->getName(),
+				type: $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
+				default: $defaultValue !== 'unknown' ? $defaultValue : '',
+				required: ($entityClass !== null && $allowsNull === false)
 					|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
-				'description' => $description,
-				'children' => $entityClass !== null ? $this->processEntityProperties($entityClass) : null,
-			];
+				description: $description,
+				children: $entityClass !== null ? $this->processEntityProperties($entityClass) : null,
+			);
 		}
 
 		return $return;
@@ -207,7 +208,7 @@ final class Renderer
 				$requiredType .= $propertyNativeType->allowsNull() ? '|null' : '';
 			}
 		} elseif ($comment !== '' && preg_match('/@var\s+(\S+)/', $comment, $parser) === 1) { // scalar types only!
-			$requiredType = $parser[1] ?: 'null';
+			$requiredType = $parser[1] !== '' ? $parser[1] : 'null';
 		} else {
 			$requiredType = 'null';
 		}
@@ -241,7 +242,7 @@ final class Renderer
 	private function resolvePropertyDefaultValue(
 		\ReflectionProperty $property,
 		object $entityInstance,
-		?string $entityClass
+		?string $entityClass,
 	): ?string {
 		$type = $property->getType();
 		if ($entityClass !== null && $type !== null && $type->allowsNull() === false) {

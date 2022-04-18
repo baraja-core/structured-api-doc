@@ -70,7 +70,7 @@ final class Helpers
 	public static function findCommentAnnotation(
 		string $haystack,
 		string $annotation,
-		?string $matchingPattern = null
+		?string $matchingPattern = null,
 	): ?string {
 		foreach (explode("\n", $haystack) as $line) {
 			if (preg_match('/^@(\S+)\s*(.*)$/', trim($line), $parser) === 1 && ($parser[1] ?? '') === $annotation) {
