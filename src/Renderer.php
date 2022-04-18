@@ -177,15 +177,20 @@ final class Renderer
 			assert($property->getName() !== '');
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$defaultValue = $this->resolvePropertyDefaultValue($property, $entityInstance, $entityClass);
+
 			$return[] = new EntityPropertyMeta(
 				position: $position++,
 				name: $property->getName(),
-				type: $entityClass ?? implode('|', array_merge($scalarTypes, $allowsNull ? ['null'] : [])),
+				type: (static function () use ($entityClass, $scalarTypes, $allowsNull): string {
+					$scalarTypes = array_merge($scalarTypes, $allowsNull ? ['null'] : []);
+
+					return $entityClass ?? ($scalarTypes === [] ? 'mixed' : implode('|', $scalarTypes));
+				})(),
 				default: $defaultValue !== 'unknown' ? $defaultValue : '',
 				required: ($entityClass !== null && $allowsNull === false)
 					|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
 				description: $description,
-				children: $entityClass !== null ? $this->processEntityProperties($entityClass) : null,
+				children: $entityClass !== null ? $this->processEntityProperties($entityClass) : [],
 			);
 		}
 
