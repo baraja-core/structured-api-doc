@@ -118,16 +118,21 @@ final class Renderer
 		foreach ($parameters as $parameter) {
 			$type = $parameter->getType();
 			$typeName = $type?->getName();
+			$enumValues = [];
 			if (
 				$typeName !== null
 				&& $typeName !== 'string'
 				&& $typeName !== 'int'
 				&& \class_exists($typeName) === true
 			) {
-				return array_map(
-					static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
-					$this->processEntityProperties($typeName),
-				);
+				if (is_subclass_of($typeName, \UnitEnum::class)) {
+					$enumValues = array_map(static fn(\UnitEnum $case): string => htmlspecialchars($case->value ?? $case->name), $typeName::cases());
+				} else {
+					return array_map(
+						static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
+						$this->processEntityProperties($typeName),
+					);
+				}
 			}
 			try {
 				$default = $parameter->getDefaultValue();
@@ -148,7 +153,7 @@ final class Renderer
 			$return[] = [
 				'position' => $parameter->getPosition(),
 				'name' => $parameter->getName(),
-				'type' => $type === null ? '-' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : ''),
+				'type' => $this->renderType($type, $enumValues),
 				'default' => $default,
 				'required' => $parameter->isOptional() === false,
 				'description' => $description,
@@ -269,5 +274,17 @@ final class Renderer
 		}
 
 		return 'unknown';
+	}
+
+
+	/**
+	 * @param array<int, string> $possibleValues
+	 */
+	private function renderType(?\ReflectionType $type, array $possibleValues = []): string
+	{
+		$renderType = $type === null ? '' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '');
+		$renderValues = $possibleValues !== [] ? sprintf('"%s"', implode('", "', $possibleValues)) : null;
+
+		return trim($renderValues !== null ? sprintf('[%s] %s', $renderValues, $renderType) : ($renderType ?? '-'));
 	}
 }
