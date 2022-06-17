@@ -284,7 +284,9 @@ final class Renderer
 	 */
 	private function renderType(?\ReflectionType $type, array $possibleValues = []): string
 	{
-		$renderType = $type === null? '' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '');
+		$renderType = $type !== null
+			? sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '')
+			: '';
 
 		return trim(
 			$possibleValues !== []
