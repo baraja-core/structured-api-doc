@@ -18,10 +18,20 @@ $ composer require baraja-core/structured-api-doc
 
 You can use the package manually by creating an instance of the internal classes, or register a DIC extension to link the services directly to the Nette Framework.
 
+![Rendered documentation about Article](doc/sample-article.png)
+
 Idea
 ----
 
-Imagine some API endpoint (implementing [Baraja Structured API](https://github.com/baraja-core/structured-api)) like this:
+When developing any application, developers must maintain both the source code itself and documentation describing the general functionality for others. Writing documentation in a separate system takes more time, leads to human error, and makes the documentation obsolete over time. BRJ solves this problem by allowing developers to write documentation directly into comments in the source code, and then always machine-generate the page consistently.
+
+How to start using BRJ documentation?
+
+1. Use Structured API endpoints (implementing [Baraja Structured API](https://github.com/baraja-core/structured-api)) to your application
+2. Install this package
+3. Open URL `/api-documentation`
+
+Sample endpoint implementation with native comments:
 
 ```php
 /**
@@ -46,12 +56,6 @@ final class ArticleEndpoint extends BaseEndpoint
    {
       // Here is some body...
 ```
-
-You can simply type documentation to native PHP Doc blocks in your code and it will generate documentation automatically to HTML:
-
-![Rendered documentation about Article](doc/sample-article.png)
-
-For documentation simply open URI `/api-documentation` and your schema will be created automatically.
 
 📄 License
 -----------
