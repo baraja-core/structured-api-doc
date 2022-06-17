@@ -7,18 +7,24 @@ namespace Baraja\StructuredApi\Doc;
 
 use Baraja\StructuredApi\Doc\Descriptor\ApiAction;
 use Baraja\StructuredApi\Doc\DTO\EntityPropertyMeta;
-use Latte\Engine;
 use Nette\Utils\Strings;
 
 final class Renderer
 {
-	private const SCALAR_TYPES = ['string' => 1, 'bool' => 1, 'int' => 1, 'float' => 1, 'array' => 1, 'null' => 1];
+	private const ScalarTypes = ['string' => 1, 'bool' => 1, 'int' => 1, 'float' => 1, 'array' => 1, 'null' => 1];
 
 
 	/**
-	 * @param string[] $errors
+	 * @return array<int, array{
+	 *    route: string,
+	 *    class: string,
+	 *    name: string,
+	 *    description: string|null,
+	 *    public: bool,
+	 *    actions: array<int, mixed>
+	 * }>
 	 */
-	public function render(DocumentationInfo $documentation, array $errors = []): void
+	public function render(DocumentationInfo $documentation): array
 	{
 		$structure = [];
 		foreach ($documentation->getEndpointsInfo() as $endpoint) {
@@ -45,11 +51,7 @@ final class Renderer
 
 		usort($structure, static fn(array $a, array $b): int => strcmp($a['route'], $b['route']));
 
-		(new Engine)->render(__DIR__ . '/basic.latte', [
-			'documentation' => $documentation,
-			'errors' => $errors,
-			'structure' => $structure,
-		]);
+		return $structure;
 	}
 
 
@@ -118,21 +120,16 @@ final class Renderer
 		foreach ($parameters as $parameter) {
 			$type = $parameter->getType();
 			$typeName = $type?->getName();
-			$enumValues = [];
 			if (
 				$typeName !== null
 				&& $typeName !== 'string'
 				&& $typeName !== 'int'
 				&& \class_exists($typeName) === true
 			) {
-				if (is_subclass_of($typeName, \UnitEnum::class)) {
-					$enumValues = array_map(static fn(\UnitEnum $case): string => htmlspecialchars($case->value ?? $case->name), $typeName::cases());
-				} else {
-					return array_map(
-						static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
-						$this->processEntityProperties($typeName),
-					);
-				}
+				return array_map(
+					static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
+					$this->processEntityProperties($typeName),
+				);
 			}
 			try {
 				$default = $parameter->getDefaultValue();
@@ -153,7 +150,7 @@ final class Renderer
 			$return[] = [
 				'position' => $parameter->getPosition(),
 				'name' => $parameter->getName(),
-				'type' => $this->renderType($type, $enumValues),
+				'type' => $type === null ? '-' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : ''),
 				'default' => $default,
 				'required' => $parameter->isOptional() === false,
 				'description' => $description,
@@ -230,7 +227,7 @@ final class Renderer
 		foreach (explode('|', $requiredType) as $type) {
 			if ($type === 'null') {
 				$allowsNull = true;
-			} elseif (isset(self::SCALAR_TYPES[$type]) === true) {
+			} elseif (isset(self::ScalarTypes[$type]) === true) {
 				$scalarTypes[] = $type;
 			} elseif (\class_exists($type) === true) {
 				$entityClass = $type;
@@ -274,17 +271,5 @@ final class Renderer
 		}
 
 		return 'unknown';
-	}
-
-
-	/**
-	 * @param array<int, string> $possibleValues
-	 */
-	private function renderType(?\ReflectionType $type, array $possibleValues = []): string
-	{
-		$renderType = $type === null ? '' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '');
-		$renderValues = $possibleValues !== [] ? sprintf('"%s"', implode('", "', $possibleValues)) : null;
-
-		return trim($renderValues !== null ? sprintf('[%s] %s', $renderValues, $renderType) : ($renderType ?? '-'));
 	}
 }

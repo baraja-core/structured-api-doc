@@ -8,12 +8,20 @@ namespace Baraja\StructuredApi\Doc;
 use Baraja\StructuredApi\ApiManager;
 use Baraja\StructuredApi\Doc\Descriptor\EndpointInfo;
 use Baraja\StructuredApi\Endpoint;
-use Latte\Engine;
+use Baraja\Url\Url;
 use Nette\DI\Container;
 use Nette\Security\User;
 
 final class Documentation
 {
+	private const ContentTypes = [
+		'js' => 'application/javascript',
+		'css' => 'text/css',
+		'ico' => 'image/x-icon',
+		'txt' => 'text/plain',
+		'map' => 'text/plain',
+	];
+
 	private ApiManager $apiManager;
 
 	private Container $container;
@@ -39,7 +47,36 @@ final class Documentation
 	public function run(): void
 	{
 		if ($this->isLoggedIn() === false && Helpers::isLocalRequest() === false) {
-			(new Engine)->render(__DIR__ . '/permissionDenied.latte');
+			echo file_get_contents(__DIR__ . '/permissionDenied.html');
+			die;
+		}
+		$url = Url::get();
+		$urlParts = explode('/', $url->getRelativeUrl(), 2);
+		$path = trim($urlParts[1] ?? '', '/');
+
+		if ($path === '') {
+			echo preg_replace(
+				'~(src|href)="/~',
+				sprintf('$1="%s/api-documentation/', $url->getBaseUrl()),
+				(string) file_get_contents(__DIR__ . '/../out/index.html'),
+			);
+			echo sprintf('<div id="brj-endpoint-url" style="display:none">%s/%s/api</div>', $url->getBaseUrl(), $urlParts[0]);
+			die;
+		}
+		if ($path !== 'api') {
+			if (str_contains($path, '..')) {
+				echo 'Bad request.';
+			} else {
+				$assetPath = sprintf('%s/out/%s', dirname(__DIR__), $path);
+				if (is_file($assetPath)) {
+					$extension = pathinfo($assetPath, PATHINFO_EXTENSION);
+					assert(is_string($extension));
+					header(sprintf('Content-Type: %s', self::ContentTypes[$extension] ?? self::ContentTypes['js']));
+					echo file_get_contents($assetPath);
+				} else {
+					echo sprintf('File "%s" does not exist.', htmlspecialchars($path));
+				}
+			}
 			die;
 		}
 
@@ -58,7 +95,11 @@ final class Documentation
 			}
 		}
 
-		$this->renderer->render(new DocumentationInfo($endpoints, $endpointInfos), $errors);
+		header('Content-Type: application/json; charset=utf-8');
+		echo json_encode([
+			'endpoints' => $this->renderer->render(new DocumentationInfo($endpoints, $endpointInfos)),
+			'errors' => $errors,
+		], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
 		die;
 	}
 

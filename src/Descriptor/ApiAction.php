@@ -9,7 +9,7 @@ use Baraja\StructuredApi\Doc\Helpers;
 
 final class ApiAction
 {
-	private const METHOD_TO_HTTP_METHOD_REWRITES = ['action' => 'GET'];
+	private const MethodToHttpMethodRewrites = ['action' => 'GET'];
 
 	private string $methodName;
 
@@ -50,7 +50,9 @@ final class ApiAction
 
 	public function getHttpMethod(): string
 	{
-		return strtoupper(self::METHOD_TO_HTTP_METHOD_REWRITES[$method = strtolower($this->getMethod())] ?? $method);
+		$method = strtolower($this->getMethod());
+
+		return strtoupper(self::MethodToHttpMethodRewrites[$method] ?? $method);
 	}
 
 
