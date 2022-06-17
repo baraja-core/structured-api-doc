@@ -70,7 +70,6 @@ final class Documentation
 				$assetPath = sprintf('%s/out/%s', dirname(__DIR__), $path);
 				if (is_file($assetPath)) {
 					$extension = pathinfo($assetPath, PATHINFO_EXTENSION);
-					assert(is_string($extension));
 					header(sprintf('Content-Type: %s', self::ContentTypes[$extension] ?? self::ContentTypes['js']));
 					echo file_get_contents($assetPath);
 				} else {
