@@ -108,7 +108,7 @@ final class Renderer
 	 * @return array<int, array{
 	 *    position: int,
 	 *    name: non-empty-string,
-	 *    type: non-empty-string,
+	 *    type: string,
 	 *    default: mixed|null,
 	 *    required: bool,
 	 *    description: string|null
@@ -284,9 +284,12 @@ final class Renderer
 	 */
 	private function renderType(?\ReflectionType $type, array $possibleValues = []): string
 	{
-		$renderType = $type === null ? '' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '');
-		$renderValues = $possibleValues !== [] ? sprintf('"%s"', implode('", "', $possibleValues)) : null;
+		$renderType = $type === null? '' : sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '');
 
-		return trim($renderValues !== null ? sprintf('[%s] %s', $renderValues, $renderType) : ($renderType ?? '-'));
+		return trim(
+			$possibleValues !== []
+				? sprintf('["%s"] %s', implode('", "', $possibleValues), $renderType)
+				: $renderType,
+		);
 	}
 }
