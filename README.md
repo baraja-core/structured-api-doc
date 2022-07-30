@@ -57,6 +57,13 @@ final class ArticleEndpoint extends BaseEndpoint
       // Here is some body...
 ```
 
+Designed for developers
+-----------------------
+
+We understand that maintaining data structures in PHP and on the frontend can be challenging, so the library includes a native button to export any response structure to TypeScript:
+
+![Native TypeScript export](doc/typescript.png)
+
 📄 License
 -----------
 
