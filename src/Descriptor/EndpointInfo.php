@@ -47,6 +47,7 @@ final class EndpointInfo
 					name: Strings::firstLower($match[2]),
 					comment: (string) $method->getDocComment(),
 					parameters: $method->getParameters(),
+					returnType: $method->getReturnType()?->getName(),
 				);
 			}
 		}

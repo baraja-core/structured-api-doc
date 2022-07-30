@@ -22,17 +22,26 @@ final class ApiAction
 	/** @var \ReflectionParameter[] */
 	private array $parameters;
 
+	private ?string $returnType;
+
 
 	/**
 	 * @param \ReflectionParameter[] $parameters
 	 */
-	public function __construct(string $methodName, string $method, string $name, string $comment, array $parameters)
-	{
+	public function __construct(
+		string $methodName,
+		string $method,
+		string $name,
+		string $comment,
+		array $parameters,
+		?string $returnType,
+	) {
 		$this->methodName = $methodName;
 		$this->method = $method;
 		$this->name = $name;
 		$this->comment = $comment !== '' ? Helpers::normalizeComment($comment) : null;
 		$this->parameters = $parameters;
+		$this->returnType = $returnType;
 	}
 
 
@@ -80,5 +89,11 @@ final class ApiAction
 	public function getParameters(): array
 	{
 		return $this->parameters;
+	}
+
+
+	public function getReturnType(): ?string
+	{
+		return $this->returnType;
 	}
 }

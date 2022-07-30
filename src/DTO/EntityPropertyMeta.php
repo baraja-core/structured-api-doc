@@ -25,26 +25,16 @@ final class EntityPropertyMeta
 	}
 
 
-	/**
-	 * @return array{
-	 *    position: int<0, max>,
-	 *    name: non-empty-string,
-	 *    type: non-empty-string,
-	 *    default: string|null,
-	 *    required: bool,
-	 *    description: string|null
-	 * }
-	 */
-	public function toArray(): array
+	public function toEntity(): EndpointParameterResponse
 	{
-		return [
-			'position' => $this->position,
-			'name' => $this->name,
-			'type' => $this->type,
-			'default' => $this->default,
-			'required' => $this->required,
-			'description' => $this->description,
-		];
+		return new EndpointParameterResponse(
+			position: $this->position,
+			name: $this->name,
+			type: $this->type,
+			default: $this->default,
+			required: $this->required,
+			description: $this->description,
+		);
 	}
 
 

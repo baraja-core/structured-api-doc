@@ -6,7 +6,13 @@ namespace Baraja\StructuredApi\Doc;
 
 
 use Baraja\StructuredApi\Doc\Descriptor\ApiAction;
+use Baraja\StructuredApi\Doc\DTO\DocumentationResponse as DR;
+use Baraja\StructuredApi\Doc\DTO\EndpointActionResponse;
+use Baraja\StructuredApi\Doc\DTO\EndpointAggregatedParameterResponse;
+use Baraja\StructuredApi\Doc\DTO\EndpointParameterResponse;
+use Baraja\StructuredApi\Doc\DTO\EndpointPossibleResponseBadge;
 use Baraja\StructuredApi\Doc\DTO\EntityPropertyMeta;
+use Baraja\StructuredApi\Doc\DTO\EntityResponsePropertyResponse;
 use Nette\Utils\Strings;
 
 final class Renderer
@@ -15,14 +21,7 @@ final class Renderer
 
 
 	/**
-	 * @return array<int, array{
-	 *    route: string,
-	 *    class: string,
-	 *    name: string,
-	 *    description: string|null,
-	 *    public: bool,
-	 *    actions: array<int, mixed>
-	 * }>
+	 * @return array<int, DR>
 	 */
 	public function render(DocumentationInfo $documentation): array
 	{
@@ -34,48 +33,26 @@ final class Renderer
 				? null
 				: Helpers::findCommentAnnotation($comment, 'endpointName');
 
-			$actions = [];
-			foreach ($endpoint->getActionMethods() as $action) {
-				$actions[] = $this->processAction($action);
-			}
-
-			$structure[] = [
-				'route' => $route,
-				'class' => $endpoint->getClass(),
-				'name' => $name ?? Strings::firstUpper(str_replace('-', ' ', $route)),
-				'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
-				'public' => $comment !== null && preg_match('/@public(?:$|\s|\n)/', $comment) === 1,
-				'actions' => $actions,
-			];
+			$structure[] = new DR(
+				route: $route,
+				class: $endpoint->getClass(),
+				name: $name ?? Strings::firstUpper(str_replace('-', ' ', $route)),
+				description: $comment === null ? null : Helpers::findCommentDescription($comment),
+				public: $comment !== null && preg_match('/@public(?:$|\s|\n)/', $comment) === 1,
+				actions: array_map(
+					fn(ApiAction $action) => $this->processAction($action),
+					$endpoint->getActionMethods(),
+				),
+			);
 		}
 
-		usort($structure, static fn(array $a, array $b): int => strcmp($a['route'], $b['route']));
+		usort($structure, static fn(DR $a, DR $b): int => strcmp($a->route, $b->route));
 
 		return $structure;
 	}
 
 
-	/**
-	 * @return array{
-	 *    name: string,
-	 *    method: string,
-	 *    route: string,
-	 *    httpMethod: string,
-	 *    methodName: string,
-	 *    description: string|null,
-	 *    roles: array<int, string>|null,
-	 *    throws: array<int, string>,
-	 *    parameters: array<int, array{
-	 *        position: int,
-	 *        name: non-empty-string,
-	 *        type: string,
-	 *        default: mixed|null,
-	 *        required: bool,
-	 *        description: string|null
-	 *     }>
-	 * }
-	 */
-	private function processAction(ApiAction $action): array
+	private function processAction(ApiAction $action): EndpointActionResponse
 	{
 		$throws = [];
 		$comment = $action->getComment();
@@ -89,80 +66,94 @@ final class Renderer
 		/** @phpstan-ignore-next-line */
 		$roles = $comment !== null ? \Baraja\StructuredApi\Helpers::parseRolesFromComment($comment) : [];
 
-		return [
-			'name' => $action->getName(),
-			'method' => $action->getMethod(),
-			'route' => $action->getRoute(),
-			'httpMethod' => $action->getHttpMethod(),
-			'methodName' => $action->getMethodName(),
-			'description' => $comment === null ? null : Helpers::findCommentDescription($comment),
-			'roles' => $roles,
-			'throws' => $throws,
-			'parameters' => $this->processParameters($comment, $action->getParameters()),
-		];
+		$parameters = array_map(
+			fn(\ReflectionParameter $parameter) => $this->processParameters($comment, $parameter),
+			$action->getParameters(),
+		);
+		$parametersDeclaringType = null;
+		if (
+			count($parameters) === 1
+			&& isset($parameters[0])
+			&& $parameters[0] instanceof EndpointAggregatedParameterResponse
+		) {
+			$parametersDeclaringType = $parameters[0]->type;
+			$parameters = $parameters[0]->objectProperties;
+		}
+
+		return new EndpointActionResponse(
+			name: $action->getName(),
+			method: $action->getMethod(),
+			route: $action->getRoute(),
+			httpMethod: $action->getHttpMethod(),
+			methodName: $action->getMethodName(),
+			description: $comment === null ? null : Helpers::findCommentDescription($comment),
+			roles: $roles,
+			throws: $throws,
+			parameters: $parameters,
+			parametersDeclaringType: $parametersDeclaringType,
+			returnType: $action->getReturnType(),
+			responses: $this->renderPossibleResponses($action),
+		);
 	}
 
 
-	/**
-	 * @param array<int, \ReflectionParameter> $parameters
-	 * @return array<int, array{
-	 *    position: int,
-	 *    name: non-empty-string,
-	 *    type: string,
-	 *    default: mixed|null,
-	 *    required: bool,
-	 *    description: string|null
-	 * }>
-	 */
-	private function processParameters(?string $comment, array $parameters): array
+	private function processParameters(?string $comment, \ReflectionParameter $parameter): EndpointParameterResponse
 	{
-		$return = [];
-		foreach ($parameters as $parameter) {
-			$type = $parameter->getType();
-			$typeName = $type?->getName();
-			$enumValues = [];
-			if (
-				$typeName !== null
-				&& $typeName !== 'string'
-				&& $typeName !== 'int'
-				&& \class_exists($typeName) === true
-			) {
-				if (is_subclass_of($typeName, \UnitEnum::class)) {
-					$enumValues = array_map(static fn(\UnitEnum $case): string => htmlspecialchars($case->value ?? $case->name), $typeName::cases());
-				} else {
-					return array_map(
-						static fn(EntityPropertyMeta $meta): array => $meta->toArray(),
-						$this->processEntityProperties($typeName),
-					);
-				}
-			}
-			try {
-				$default = $parameter->getDefaultValue();
-			} catch (\ReflectionException) {
-				$default = null;
-			}
+		$type = $parameter->getType();
+		$typeName = $type?->getName();
+		$enumValues = [];
+		if (
+			$typeName !== null
+			&& $typeName !== 'string'
+			&& $typeName !== 'int'
+			&& \class_exists($typeName) === true
+		) {
+			if (is_subclass_of($typeName, \UnitEnum::class)) {
+				$enumValues = array_map(
+					static fn(\UnitEnum $case): string => htmlspecialchars($case->value ?? $case->name),
+					$typeName::cases()
+				);
+			} else {
+				$return = new EndpointAggregatedParameterResponse(
+					position: 0,
+					name: $parameter->getName(),
+					type: $typeName,
+					default: null,
+					required: $parameter->isOptional() === false,
+					description: null,
+				);
+				$return->objectProperties = array_map(
+					static fn(EntityPropertyMeta $meta): EndpointParameterResponse => $meta->toEntity(),
+					$this->processEntityProperties($typeName),
+				);
 
-			$description = null;
-			if ($comment !== null) {
-				$pattern = '@(\S+)\s*(?:.*?)\$' . preg_quote($parameter->getName(), '/') . '\s+(.*?)';
-				$paramAnnotation = Helpers::findCommentAnnotation($comment, 'param', $pattern);
-				if ($paramAnnotation !== null) {
-					$description = (string) preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
-				}
+				return $return;
 			}
-			assert($parameter->getName() !== '');
-
-			$return[] = [
-				'position' => $parameter->getPosition(),
-				'name' => $parameter->getName(),
-				'type' => $this->renderType($type, $enumValues),
-				'default' => $default,
-				'required' => $parameter->isOptional() === false,
-				'description' => $description,
-			];
+		}
+		try {
+			$default = $parameter->getDefaultValue();
+		} catch (\ReflectionException) {
+			$default = null;
 		}
 
-		return $return;
+		$description = null;
+		if ($comment !== null) {
+			$pattern = '@(\S+)\s*(?:.*?)\$' . preg_quote($parameter->getName(), '/') . '\s+(.*?)';
+			$paramAnnotation = Helpers::findCommentAnnotation($comment, 'param', $pattern);
+			if ($paramAnnotation !== null) {
+				$description = (string) preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
+			}
+		}
+		assert($parameter->getName() !== '');
+
+		return new EndpointParameterResponse(
+			position: $parameter->getPosition(),
+			name: $parameter->getName(),
+			type: $this->renderType($type, $enumValues),
+			default: $default,
+			required: $parameter->isOptional() === false,
+			description: $description,
+		);
 	}
 
 
@@ -188,14 +179,10 @@ final class Renderer
 			$return[] = new EntityPropertyMeta(
 				position: $position++,
 				name: $property->getName(),
-				type: (static function () use ($entityClass, $scalarTypes, $allowsNull): string {
-					$scalarTypes = array_merge($scalarTypes, $allowsNull ? ['null'] : []);
-
-					return $entityClass ?? ($scalarTypes === [] ? 'mixed' : implode('|', $scalarTypes));
-				})(),
+				type: $this->serializeType($entityClass, $scalarTypes, $allowsNull),
 				default: $defaultValue !== 'unknown' ? $defaultValue : '',
 				required: ($entityClass !== null && $allowsNull === false)
-					|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
+				|| ($entityClass === null && ($defaultValue === null || $defaultValue === 'unknown')),
 				description: $description,
 				children: $entityClass !== null ? $this->processEntityProperties($entityClass) : [],
 			);
@@ -293,5 +280,93 @@ final class Renderer
 				? sprintf('["%s"] %s', implode('", "', $possibleValues), $renderType)
 				: $renderType,
 		);
+	}
+
+
+	/**
+	 * @return array<int, EndpointPossibleResponseBadge>
+	 */
+	private function renderPossibleResponses(ApiAction $action): array
+	{
+		$returnType = $action->getReturnType();
+		if (
+			$returnType !== 'array'
+			&& ($returnType === null || $returnType === 'void' || isset(self::ScalarTypes[$returnType]))
+		) {
+			return [];
+		}
+
+		$return = [];
+		if (class_exists($returnType)) {
+			$properties = $this->hydrateResponseStructure(new \ReflectionClass($returnType));
+			$return[] = new EndpointPossibleResponseBadge(
+				properties: $properties,
+				typescriptDefinition: TypeScriptResponseHydration::hydrateDefinition($properties),
+			);
+		}
+
+		return $return;
+	}
+
+
+	/**
+	 * @return array<int, EntityResponsePropertyResponse>
+	 */
+	private function hydrateResponseStructure(\ReflectionClass $ref): array
+	{
+		$return = [];
+		foreach ($ref->getProperties() as $property) {
+			$property->setAccessible(true);
+			assert($property->getName() !== '');
+			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
+			$return[] = new EntityResponsePropertyResponse(
+				name: $property->getName(),
+				type: $this->serializeType($entityClass, $scalarTypes, $allowsNull),
+				description: $description,
+				annotation: $this->processPropertyAnnotation($property),
+				nullable: $allowsNull,
+				children: $entityClass !== null && class_exists($entityClass)
+					? $this->hydrateResponseStructure(new \ReflectionClass($entityClass))
+					: [],
+			);
+		}
+
+		return $return;
+	}
+
+
+	/**
+	 * @param array<int, string> $scalarTypes
+	 */
+	private function serializeType(?string $entityClass, array $scalarTypes, bool $allowsNull): string
+	{
+		$scalarTypes = array_merge($scalarTypes, $allowsNull === true ? ['null'] : []);
+
+		return $entityClass ?? ($scalarTypes === [] ? 'mixed' : implode('|', $scalarTypes));
+	}
+
+
+	private function processPropertyAnnotation(\ReflectionProperty $property): ?string
+	{
+		$name = $property->getName();
+		$entity = $property->getDeclaringClass();
+		$entityConstructor = $entity->getConstructor();
+		$entityDoc = trim((string) ($entityConstructor !== null ? $entityConstructor->getDocComment() : ''));
+		if ($entityDoc === '') {
+			return null;
+		}
+
+		preg_match_all('/@param\s+([^\$]+?)\s+\$(\w+)\n/', $entityDoc, $matches);
+		for ($i = 0; isset($matches[2][$i]); $i++) {
+			if (($matches[2][$i] ?? '') === $name) {
+				$return = (string) ($matches[1][$i] ?? '');
+				$return = preg_replace('/(?:\s|\n)+\*(?:\s|\n)+/', ' ', $return);
+				$return = preg_replace('/\s+/', ' ', $return);
+
+				return trim($return);
+			}
+		}
+
+		return null;
 	}
 }
