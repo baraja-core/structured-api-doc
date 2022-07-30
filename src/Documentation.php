@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Baraja\StructuredApi\Doc;
 
 
+use Baraja\Serializer\Serializer;
 use Baraja\StructuredApi\ApiManager;
 use Baraja\StructuredApi\Doc\Descriptor\EndpointInfo;
 use Baraja\StructuredApi\Endpoint;
@@ -95,10 +96,13 @@ final class Documentation
 		}
 
 		header('Content-Type: application/json; charset=utf-8');
-		echo json_encode([
-			'endpoints' => $this->renderer->render(new DocumentationInfo($endpoints, $endpointInfos)),
-			'errors' => $errors,
-		], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE);
+		echo json_encode(
+			Serializer::get()->serialize([
+				'endpoints' => $this->renderer->render(new DocumentationInfo($endpoints, $endpointInfos)),
+				'errors' => $errors,
+			]),
+			JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE,
+		);
 		die;
 	}
 
