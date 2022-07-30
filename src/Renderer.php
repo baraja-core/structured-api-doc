@@ -278,11 +278,9 @@ final class Renderer
 			? sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '')
 			: 'mixed';
 
-		return trim(
-			$possibleValues !== []
-				? sprintf('["%s"] %s', implode('", "', $possibleValues), $renderType)
-				: $renderType,
-		);
+		return $possibleValues !== []
+			? sprintf('["%s"] %s', implode('", "', $possibleValues), $renderType)
+			: $renderType;
 	}
 
 
