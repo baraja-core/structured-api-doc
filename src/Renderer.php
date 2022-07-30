@@ -111,9 +111,10 @@ final class Renderer
 			if (is_subclass_of($typeName, \UnitEnum::class)) {
 				$enumValues = array_map(
 					static fn(\UnitEnum $case): string => htmlspecialchars($case->value ?? $case->name),
-					$typeName::cases()
+					$typeName::cases(),
 				);
 			} else {
+				assert($parameter->getName() !== '');
 				$return = new EndpointAggregatedParameterResponse(
 					position: 0,
 					name: $parameter->getName(),
@@ -145,6 +146,7 @@ final class Renderer
 			}
 		}
 		assert($parameter->getName() !== '');
+		assert($parameter->getPosition() >= 0);
 
 		return new EndpointParameterResponse(
 			position: $parameter->getPosition(),
@@ -268,12 +270,13 @@ final class Renderer
 
 	/**
 	 * @param array<int, string> $possibleValues
+	 * @return non-empty-string
 	 */
 	private function renderType(?\ReflectionType $type, array $possibleValues = []): string
 	{
 		$renderType = $type !== null
 			? sprintf('%s%s', $type->getName(), $type->allowsNull() ? '|null' : '')
-			: '';
+			: 'mixed';
 
 		return trim(
 			$possibleValues !== []
@@ -336,7 +339,9 @@ final class Renderer
 
 
 	/**
+	 * @param class-string|null $entityClass
 	 * @param array<int, string> $scalarTypes
+	 * @return class-string|non-empty-string
 	 */
 	private function serializeType(?string $entityClass, array $scalarTypes, bool $allowsNull): string
 	{
@@ -360,8 +365,8 @@ final class Renderer
 		for ($i = 0; isset($matches[2][$i]); $i++) {
 			if (($matches[2][$i] ?? '') === $name) {
 				$return = (string) ($matches[1][$i] ?? '');
-				$return = preg_replace('/(?:\s|\n)+\*(?:\s|\n)+/', ' ', $return);
-				$return = preg_replace('/\s+/', ' ', $return);
+				$return = (string) preg_replace('/(?:\s|\n)+\*(?:\s|\n)+/', ' ', $return);
+				$return = (string) preg_replace('/\s+/', ' ', $return);
 
 				return trim($return);
 			}

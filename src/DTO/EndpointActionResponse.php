@@ -8,7 +8,7 @@ namespace Baraja\StructuredApi\Doc\DTO;
 final class EndpointActionResponse
 {
 	/**
-	 * @param array<int, string>|null $roles
+	 * @param array<int, string> $roles
 	 * @param array<int, string> $throws
 	 * @param EndpointParameterResponse[] $parameters
 	 * @param EndpointPossibleResponseBadge[] $responses

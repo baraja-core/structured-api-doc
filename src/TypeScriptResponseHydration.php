@@ -22,13 +22,10 @@ final class TypeScriptResponseHydration
 	 * @param array<int, EntityResponsePropertyResponse> $properties
 	 * @param array<int, string> $usedInterfaces
 	 */
-	public static function hydrateDefinition(array $properties, array $usedInterfaces = []): ?string
+	public static function hydrateDefinition(array $properties, array $usedInterfaces = []): string
 	{
-		if ($properties === [] && $usedInterfaces === []) {
-			return '// no response';
-		}
-		if ($properties === [] && $usedInterfaces !== []) {
-			return '';
+		if ($properties === []) {
+			return $usedInterfaces === [] ? '// no response' : '';
 		}
 
 		$return = '';
@@ -67,7 +64,7 @@ final class TypeScriptResponseHydration
 
 	private static function renderProperty(EntityResponsePropertyResponse $property, ?string $interface = null): string
 	{
-		$type = (string) preg_replace('/\|null$/', '', $property->type);
+		$type = (string) preg_replace('/\|null$/', '', (string) $property->type);
 		$realType = $interface ?? self::translatePhpTypeToTypescriptDefinition($type);
 
 		$description = '';

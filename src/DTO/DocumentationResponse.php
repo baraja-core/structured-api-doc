@@ -7,6 +7,9 @@ namespace Baraja\StructuredApi\Doc\DTO;
 
 final class DocumentationResponse
 {
+	/**
+	 * @param array<int, EndpointActionResponse> $actions
+	 */
 	public function __construct(
 		public string $route,
 		public string $class,
