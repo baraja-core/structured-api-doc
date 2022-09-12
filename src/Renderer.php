@@ -114,7 +114,6 @@ final class Renderer
 					$typeName::cases(),
 				);
 			} else {
-				assert($parameter->getName() !== '');
 				$return = new EndpointAggregatedParameterResponse(
 					position: 0,
 					name: $parameter->getName(),
@@ -145,7 +144,6 @@ final class Renderer
 				$description = (string) preg_replace('/^' . $pattern . '$/', '$2', $paramAnnotation);
 			}
 		}
-		assert($parameter->getName() !== '');
 		assert($parameter->getPosition() >= 0);
 
 		return new EndpointParameterResponse(
@@ -174,7 +172,6 @@ final class Renderer
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			$property->setAccessible(true);
-			assert($property->getName() !== '');
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$defaultValue = $this->resolvePropertyDefaultValue($property, $entityInstance, $entityClass);
 
@@ -318,7 +315,6 @@ final class Renderer
 		$return = [];
 		foreach ($ref->getProperties() as $property) {
 			$property->setAccessible(true);
-			assert($property->getName() !== '');
 			[$description, $allowsNull, $scalarTypes, $entityClass] = $this->inspectPropertyInfo($property);
 			$return[] = new EntityResponsePropertyResponse(
 				name: $property->getName(),
